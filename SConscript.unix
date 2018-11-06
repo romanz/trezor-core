@@ -23,6 +23,9 @@ SOURCE_MOD += [
 CCFLAGS_MOD += '-Wno-sequence-point '
 CPPPATH_MOD += [
     'vendor/trezor-crypto',
+    'vendor/secp256k1-zkp/',
+    'vendor/secp256k1-zkp/src',
+    'vendor/secp256k1-zkp/include',
 ]
 CPPDEFINES_MOD += [
     'AES_128',
@@ -32,6 +35,18 @@ CPPDEFINES_MOD += [
     ('USE_MONERO', '1'),
     ('USE_CARDANO', '1'),
     ('USE_NEM', '1'),
+#libsecp
+    ('SECP256K1_BUILD', '1'),
+    ('USE_NUM_NONE', '1'),
+    ('USE_FIELD_INV_BUILTIN', '1'),
+    ('USE_SCALAR_INV_BUILTIN', '1'),
+    ('USE_FIELD_5X52', '1'),
+    ('USE_SCALAR_4X64', '1'),
+    ('HAVE___INT128', '1'),
+    ('ENABLE_MODULE_GENERATOR', '1'),
+    ('ENABLE_MODULE_RANGEPROOF', '1'),
+    ('ENABLE_MODULE_RECOVERY', '1'),
+    ('ENABLE_MODULE_ECDH', '1'),
 ]
 SOURCE_MOD += [
     'embed/extmod/modtrezorcrypto/modtrezorcrypto.c',
@@ -80,6 +95,7 @@ SOURCE_MOD += [
     'vendor/trezor-crypto/sha2.c',
     'vendor/trezor-crypto/sha3.c',
     'vendor/trezor-crypto/nem.c',
+    'vendor/secp256k1-zkp/src/secp256k1.c',
 ]
 
 # modtrezorio
