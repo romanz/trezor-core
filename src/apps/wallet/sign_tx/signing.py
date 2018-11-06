@@ -1,7 +1,7 @@
 from micropython import const
 
 from trezor.crypto import base58, bip32, cashaddr, der
-from trezor.crypto.curve import secp256k1
+from trezor.crypto.curve import secp256k1_zkp
 from trezor.crypto.hashlib import blake256, sha256
 from trezor.messages import OutputScriptType
 from trezor.messages.TxRequestDetailsType import TxRequestDetailsType
@@ -835,7 +835,7 @@ def node_derive(root: bip32.HDNode, address_n: list) -> bip32.HDNode:
 
 
 def ecdsa_sign(node: bip32.HDNode, digest: bytes) -> bytes:
-    sig = secp256k1.sign(node.private_key(), digest)
+    sig = secp256k1_zkp.sign(node.private_key(), digest)
     sigder = der.encode_seq((sig[1:33], sig[33:65]))
     return sigder
 
