@@ -26,14 +26,16 @@
 #include "secp256k1_preallocated.h"
 #include "secp256k1_recovery.h"
 
+STATIC uint8_t g_buffer[4500] = {0};
+
 STATIC const secp256k1_context *mod_trezorcrypto_secp256k1_context(void) {
     static secp256k1_context *ctx;
     if (ctx == NULL) {
         size_t sz = secp256k1_context_preallocated_size(SECP256K1_CONTEXT_SIGN | SECP256K1_CONTEXT_VERIFY);
-        void *buf = (void *) m_new(uint8_t, sz);
-        if (buf == NULL) {
-            mp_raise_ValueError("OOM allocating libsecp256k1 context");
+        if (sz > sizeof g_buffer) {
+            mp_raise_ValueError("secp256k1 context is too large");
         }
+        void *buf = (void *) g_buffer;
         ctx = secp256k1_context_preallocated_create(buf, SECP256K1_CONTEXT_SIGN | SECP256K1_CONTEXT_VERIFY);
     }
     return ctx;
