@@ -336,7 +336,7 @@ env.Replace(
     CCFLAGS='$COPT '
     '-g3 '
     '-nostdlib '
-    '-std=gnu99 -Wall -Werror -Wdouble-promotion -Wpointer-arith -fno-common '
+    '-std=gnu99 -Wall -Werror -Wno-unused-function -Wdouble-promotion -Wpointer-arith -fno-common '
     '-fsingle-precision-constant -fdata-sections -ffunction-sections '
     '-ffreestanding '
     '-fstack-protector-all '
