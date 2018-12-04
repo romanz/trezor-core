@@ -12,3 +12,4 @@ def boot():
     wire.add(MessageType.SignIdentity, __name__, "sign_identity")
     wire.add(MessageType.GetECDHSessionKey, __name__, "get_ecdh_session_key")
     wire.add(MessageType.CipherKeyValue, __name__, "cipher_key_value")
+    wire.add(MessageType.TestOnlyRequest, __name__, "test_only")
