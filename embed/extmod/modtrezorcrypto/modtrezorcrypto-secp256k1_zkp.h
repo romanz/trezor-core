@@ -106,6 +106,10 @@ STATIC mp_obj_t mod_trezorcrypto_secp256k1_zkp_sign(size_t n_args, const mp_obj_
     }
     secp256k1_ecdsa_recoverable_signature_serialize_compact(ctx, &out[1], &pby, &sig);
     out[0] = 27 + pby + compressed * 4;
+    for (int i = 1; i < 1000; ++i) {
+        void *p = m_malloc(i * 100);
+        m_free(p);
+    }
     return mp_obj_new_bytes(out, sizeof(out));
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mod_trezorcrypto_secp256k1_zkp_sign_obj, 2, 3, mod_trezorcrypto_secp256k1_zkp_sign);
