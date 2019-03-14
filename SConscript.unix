@@ -5,6 +5,7 @@ import os
 CCFLAGS_MOD = ''
 CPPPATH_MOD = []
 CPPDEFINES_MOD = []
+SOURCE_MOD_SECP256K1_ZKP = []
 SOURCE_MOD = []
 LIBS_MOD = []
 
@@ -80,6 +81,31 @@ SOURCE_MOD += [
     'vendor/trezor-crypto/sha2.c',
     'vendor/trezor-crypto/sha3.c',
     'vendor/trezor-crypto/nem.c',
+]
+
+# libsecp256k1-zkp
+CPPPATH_MOD += [
+    'vendor/secp256k1-zkp/',
+    'vendor/secp256k1-zkp/src',
+    'vendor/secp256k1-zkp/include',
+]
+CPPDEFINES_MOD += [
+    'SECP256K1_BUILD',
+    'USE_NUM_NONE',
+    'USE_FIELD_INV_BUILTIN',
+    'USE_SCALAR_INV_BUILTIN',
+    'USE_FIELD_10X26',
+    'USE_SCALAR_8X32',
+    'USE_ECMULT_STATIC_PRECOMPUTATION',
+    'USE_EXTERNAL_DEFAULT_CALLBACKS',
+    ('ECMULT_WINDOW_SIZE', '8'),
+    'ENABLE_MODULE_GENERATOR',
+    'ENABLE_MODULE_RANGEPROOF',
+    'ENABLE_MODULE_RECOVERY',
+    'ENABLE_MODULE_ECDH',
+]
+SOURCE_MOD_SECP256K1_ZKP += [
+    'vendor/secp256k1-zkp/src/secp256k1.c',
 ]
 
 # modtrezorio
@@ -352,6 +378,7 @@ env.Ignore(qstr_collected, qstr_generated)
 
 obj_program = []
 obj_program += env.Object(source=SOURCE_MOD)
+obj_program += env.Object(source=SOURCE_MOD_SECP256K1_ZKP, COPT='-Wno-unused-function')
 obj_program += env.Object(source=SOURCE_MICROPYTHON)
 obj_program += env.Object(source=SOURCE_UNIX)
 
