@@ -78,6 +78,7 @@ int main(void)
     // to recover from limit hit.
     mp_stack_set_top(&_estack);
     mp_stack_set_limit((char*)&_estack - (char*)&_heap_end - 1024);
+    mp_stack_fill_with_sentinel();
 
     // GC init
     printf("CORE: Starting GC\n");

@@ -2,6 +2,7 @@ from trezor import wire
 from trezor.crypto.curve import secp256k1_zkp
 from trezor.messages.InputScriptType import SPENDADDRESS, SPENDP2SHWITNESS, SPENDWITNESS
 from trezor.messages.MessageSignature import MessageSignature
+from trezor.messages.BenchmarkResult import BenchmarkResult
 from trezor.ui.text import Text
 
 from apps.common import coins
@@ -17,6 +18,8 @@ async def sign_message(ctx, msg, keychain):
     coin_name = msg.coin_name or "Bitcoin"
     script_type = msg.script_type or 0
     coin = coins.by_name(coin_name)
+
+    benchmark = BenchmarkResult(result=secp256k1_zkp.benchmark())
 
     await require_confirm_sign_message(ctx, message)
     await validate_path(
@@ -44,7 +47,7 @@ async def sign_message(ctx, msg, keychain):
     else:
         raise wire.ProcessError("Unsupported script type")
 
-    return MessageSignature(address=address, signature=signature)
+    return MessageSignature(address=address, signature=signature, benchmark=benchmark)
 
 
 async def require_confirm_sign_message(ctx, message):

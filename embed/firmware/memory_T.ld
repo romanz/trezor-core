@@ -70,11 +70,11 @@ SECTIONS {
   } >CCMRAM
 
   .heap : ALIGN(4) {
-    . = 37K; /* this acts as a build time assertion that at least this much memory is available for heap use */
-    . = ABSOLUTE(sram_end - 16K); /* this explicitly sets the end of the heap effectively giving the stack at most 16K */
+    . = 137K; /* this acts as a build time assertion that at least this much memory is available for heap use */
+    . = ABSOLUTE(sram_end - 32K); /* this explicitly sets the end of the heap effectively giving the stack at most 16K */
   } >SRAM
 
   .stack : ALIGN(8) {
-    . = 4K; /* this acts as a build time assertion that at least this much memory is available for stack use */
+    . = 30K; /* this acts as a build time assertion that at least this much memory is available for stack use */
   } >SRAM
 }

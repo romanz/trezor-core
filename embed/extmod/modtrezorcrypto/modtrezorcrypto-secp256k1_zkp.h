@@ -18,6 +18,8 @@
  */
 
 #include "py/objstr.h"
+#include "py/stackctrl.h"
+#include "py/mphal.h"
 
 #include "vendor/secp256k1-zkp/include/secp256k1.h"
 #include "vendor/secp256k1-zkp/include/secp256k1_ecdh.h"
@@ -239,6 +241,37 @@ STATIC mp_obj_t mod_trezorcrypto_secp256k1_zkp_multiply(mp_obj_t secret_key, mp_
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(mod_trezorcrypto_secp256k1_zkp_multiply_obj, mod_trezorcrypto_secp256k1_zkp_multiply);
 
+static void test_stack_stuff() {
+    volatile char data[5000];
+    memset((void *)data, 0, sizeof(data)); 
+}
+
+// Benchmark secp256k1-zkp API for Confidential Transactions
+STATIC mp_obj_t mod_trezorcrypto_secp256k1_zkp_benchmark() {
+    const secp256k1_context *ctx = mod_trezorcrypto_secp256k1_context();
+    if (ctx == NULL) {
+        mp_raise_ValueError("No context found!");
+    }
+    mp_uint_t max_stack_usage_before = mp_max_stack_usage();
+    mp_stack_fill_with_sentinel();
+    test_stack_stuff();
+    mp_uint_t max_stack_usage_after = mp_max_stack_usage();
+    mp_uint_t current_stack_usage = mp_stack_usage();
+
+    mp_uint_t start_ts = mp_hal_ticks_ms();
+    mp_hal_delay_ms(1234);
+    mp_uint_t stop_ts = mp_hal_ticks_ms();
+
+    mp_obj_tuple_t *result = MP_OBJ_TO_PTR(mp_obj_new_tuple(5, NULL));
+    result->items[0] = mp_obj_new_int(mp_stack_limit());
+    result->items[1] = mp_obj_new_int(max_stack_usage_before);
+    result->items[2] = mp_obj_new_int(max_stack_usage_after);
+    result->items[3] = mp_obj_new_int(current_stack_usage);
+    result->items[4] = mp_obj_new_int(stop_ts - start_ts);
+    return result;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_trezorcrypto_secp256k1_zkp_benchmark_obj, mod_trezorcrypto_secp256k1_zkp_benchmark);
+
 STATIC const mp_rom_map_elem_t mod_trezorcrypto_secp256k1_zkp_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_secp256k1_zkp) },
     { MP_ROM_QSTR(MP_QSTR_generate_secret), MP_ROM_PTR(&mod_trezorcrypto_secp256k1_zkp_generate_secret_obj) },
@@ -247,6 +280,7 @@ STATIC const mp_rom_map_elem_t mod_trezorcrypto_secp256k1_zkp_globals_table[] = 
     { MP_ROM_QSTR(MP_QSTR_verify), MP_ROM_PTR(&mod_trezorcrypto_secp256k1_zkp_verify_obj) },
     { MP_ROM_QSTR(MP_QSTR_verify_recover), MP_ROM_PTR(&mod_trezorcrypto_secp256k1_zkp_verify_recover_obj) },
     { MP_ROM_QSTR(MP_QSTR_multiply), MP_ROM_PTR(&mod_trezorcrypto_secp256k1_zkp_multiply_obj) },
+    { MP_ROM_QSTR(MP_QSTR_benchmark), MP_ROM_PTR(&mod_trezorcrypto_secp256k1_zkp_benchmark_obj) },
 };
 STATIC MP_DEFINE_CONST_DICT(mod_trezorcrypto_secp256k1_zkp_globals, mod_trezorcrypto_secp256k1_zkp_globals_table);
 
