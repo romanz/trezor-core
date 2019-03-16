@@ -67,7 +67,7 @@ SECTIONS {
   .bss : ALIGN(4) {
     *(.bss*);
     . = ALIGN(4);
-  } >SRAM
+  } >CCMRAM
 
   .heap : ALIGN(4) {
     . = 37K; /* this acts as a build time assertion that at least this much memory is available for heap use */
