@@ -88,7 +88,7 @@ SOURCE_MOD += [
 
 # libsecp256k1-zkp
 CPPPATH_MOD += [
-    'vendor/secp256k1-zkp/',
+    'vendor/secp256k1-zkp',
     'vendor/secp256k1-zkp/src',
     'vendor/secp256k1-zkp/include',
 ]

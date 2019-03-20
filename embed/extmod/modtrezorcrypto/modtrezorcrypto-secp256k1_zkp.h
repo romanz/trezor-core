@@ -19,11 +19,10 @@
 
 #include "py/objstr.h"
 
-#include "ecdsa.h"
-#include "secp256k1.h"
-#include "secp256k1_ecdh.h"
-#include "secp256k1_preallocated.h"
-#include "secp256k1_recovery.h"
+#include "vendor/secp256k1-zkp/include/secp256k1.h"
+#include "vendor/secp256k1-zkp/include/secp256k1_ecdh.h"
+#include "vendor/secp256k1-zkp/include/secp256k1_preallocated.h"
+#include "vendor/secp256k1-zkp/include/secp256k1_recovery.h"
 
 // The minimum buffer size can vary in future secp256k1-zkp revisions.
 // It can always be determined by a call to
