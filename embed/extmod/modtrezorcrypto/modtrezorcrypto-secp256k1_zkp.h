@@ -25,7 +25,10 @@
 #include "secp256k1_preallocated.h"
 #include "secp256k1_recovery.h"
 
-STATIC uint8_t g_buffer[4500] = {0};
+// The minimum buffer size can vary in future secp256k1-zkp revisions.
+// It can always be determined by a call to
+// secp256k1_context_preallocated_size(...) as below.
+STATIC uint8_t g_buffer[(1UL << (ECMULT_WINDOW_SIZE + 4)) + 208] = {0};
 
 void secp256k1_default_illegal_callback_fn(const char* str, void* data) {
     (void) data;
