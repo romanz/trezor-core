@@ -435,7 +435,7 @@ env.Depends(source_mpyc, qstr_generated)
 
 obj_program = []
 obj_program.extend(env.Object(source=SOURCE_MOD))
-obj_program.extend(env.Object(source=SOURCE_MOD_SECP256K1_ZKP, COPT='-Wno-unused-function'))
+obj_program.extend(env.Object(source=SOURCE_MOD_SECP256K1_ZKP, CFLAGS='-Wno-unused-function'))
 obj_program.extend(env.Object(source=SOURCE_FIRMWARE))
 obj_program.extend(env.Object(source=SOURCE_MICROPYTHON))
 obj_program.extend(env.Object(source=SOURCE_MICROPYTHON_SPEED, COPT='-O3'))

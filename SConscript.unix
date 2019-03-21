@@ -378,7 +378,7 @@ env.Ignore(qstr_collected, qstr_generated)
 
 obj_program = []
 obj_program += env.Object(source=SOURCE_MOD)
-obj_program += env.Object(source=SOURCE_MOD_SECP256K1_ZKP, COPT='-Wno-unused-function')
+obj_program += env.Object(source=SOURCE_MOD_SECP256K1_ZKP, CFLAGS='-Wno-unused-function')
 obj_program += env.Object(source=SOURCE_MICROPYTHON)
 obj_program += env.Object(source=SOURCE_UNIX)
 
