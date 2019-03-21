@@ -373,6 +373,27 @@ qstr_generated = env.GenerateQstrDefs(
 env.Ignore(qstr_collected, qstr_generated)
 
 #
+# static secp256-zkp ecmult context
+#
+
+host_env = Environment(ENV=os.environ)
+host_env.Replace(
+    CC=os.getenv('CC_FOR_BUILD') or 'gcc',
+    COPT='-O2',
+    CPPPATH='vendor/secp256k1-zkp',
+)
+gen_context = host_env.Program(
+    target='vendor/secp256k1-zkp/gen_context',
+    source='vendor/secp256k1-zkp/src/gen_context.c',
+)
+
+secp256k1_zkp_ecmult_static_context = host_env.Command(
+    target='vendor/secp256k1-zkp/src/ecmult_static_context.h',
+    source='vendor/secp256k1-zkp/gen_context',
+    action='cd ${SOURCE.dir}; ./gen_context',
+)
+
+#
 # Program objects
 #
 
@@ -383,6 +404,7 @@ obj_program += env.Object(source=SOURCE_MICROPYTHON)
 obj_program += env.Object(source=SOURCE_UNIX)
 
 env.Depends(obj_program, qstr_generated)
+env.Depends(obj_program, secp256k1_zkp_ecmult_static_context)
 
 program = env.Command(
     target='micropython',
