@@ -50,6 +50,13 @@ STATIC const secp256k1_context *mod_trezorcrypto_secp256k1_context(void) {
         }
         void *buf = (void *) g_buffer;
         ctx = secp256k1_context_preallocated_create(buf, SECP256K1_CONTEXT_SIGN | SECP256K1_CONTEXT_VERIFY);
+
+        uint8_t rand[32];
+        random_buffer(rand, 32);
+        int ret = secp256k1_context_randomize(ctx, rand);
+        if (ret != 1) {
+            mp_raise_msg(&mp_type_RuntimeError, "secp256k1_context_randomize failed");
+        }
     }
     return ctx;
 }
