@@ -34,7 +34,7 @@ static int mkpath(const char *path, mode_t mode) {
         errno = EINVAL;
         return 1;
     }
-    
+
     struct stat sb;
     if (!stat(strdup(path), &sb)) {
         return 0;
@@ -62,7 +62,7 @@ void profile_init(void) {
 
 const char *profile_dir(void) {
     static const char *_profile_dir;
-    
+
     if (_profile_dir) {
         return _profile_dir;
     }
@@ -125,4 +125,11 @@ const char *profile_sdcard_path(void) {
     }
 
     return _sdcard_path;
+}
+
+void __cyg_profile_func_enter(void *dest, void *src) {
+    fprintf(stderr, "E %p %p %p\n", dest, src, &dest);
+}
+void __cyg_profile_func_exit(void *dest, void *src) {
+    fprintf(stderr, "X %p %p %p\n", dest, src, &dest);
 }
