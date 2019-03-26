@@ -23,8 +23,11 @@
 
 #include "vendor/secp256k1-zkp/include/secp256k1.h"
 #include "vendor/secp256k1-zkp/include/secp256k1_ecdh.h"
+#include "vendor/secp256k1-zkp/include/secp256k1_generator.h"
 #include "vendor/secp256k1-zkp/include/secp256k1_preallocated.h"
+#include "vendor/secp256k1-zkp/include/secp256k1_rangeproof.h"
 #include "vendor/secp256k1-zkp/include/secp256k1_recovery.h"
+#include "vendor/secp256k1-zkp/include/secp256k1_surjectionproof.h"
 
 // The minimum buffer size can vary in future secp256k1-zkp revisions.
 // It can always be determined by a call to
@@ -241,33 +244,83 @@ STATIC mp_obj_t mod_trezorcrypto_secp256k1_zkp_multiply(mp_obj_t secret_key, mp_
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(mod_trezorcrypto_secp256k1_zkp_multiply_obj, mod_trezorcrypto_secp256k1_zkp_multiply);
 
-static void test_stack_stuff() {
-    volatile char data[5000];
-    memset((void *)data, 0, sizeof(data)); 
-}
 
-// Benchmark secp256k1-zkp API for Confidential Transactions
-STATIC mp_obj_t mod_trezorcrypto_secp256k1_zkp_benchmark() {
+unsigned char proof[5134];
+unsigned char blind[32] = {14};
+secp256k1_pedersen_commitment commit;
+
+/* we'll switch to dylan thomas for this one */
+const unsigned char message[68] = "My tears are like the quiet drift / Of petals from some magic rose;";
+const size_t mlen = sizeof(message);
+const unsigned char ext_commit[72] = "And all my grief flows from the rift / Of unremembered skies and snows.";
+const size_t ext_commit_len = sizeof(ext_commit);
+
+void run_benchmark() {
+    // volatile char data[4000];
+    // memset((void *)data, 0, sizeof(data));
+    // secp256k1_pedersen_blind_generator_blind_sum;
+    // secp256k1_pedersen_commit;
+    // secp256k1_pedersen_commitment_serialize;
+    // secp256k1_rangeproof_rewind;
+    // secp256k1_rangeproof_sign;
+    // secp256k1_surjectionproof_generate;
+    // secp256k1_surjectionproof_initialize;
+    // secp256k1_surjectionproof_serialize;
+    // secp256k1_surjectionproof_serialized_size;
+    // secp256k1_surjectionproof_verify;
     const secp256k1_context *ctx = mod_trezorcrypto_secp256k1_context();
     if (ctx == NULL) {
         mp_raise_ValueError("No context found!");
     }
-    mp_uint_t max_stack_usage_before = mp_max_stack_usage();
-    mp_stack_fill_with_sentinel();
-    test_stack_stuff();
-    mp_uint_t max_stack_usage_after = mp_max_stack_usage();
-    mp_uint_t current_stack_usage = mp_stack_usage();
 
+    uint64_t val = 17;
+    int ret = secp256k1_pedersen_commit(ctx, &commit, blind, val, secp256k1_generator_h);
+    if (ret == 0) {
+        mp_raise_ValueError("secp256k1_pedersen_commit failed");
+    }
+    uint64_t vmin = 0;
+    size_t len = sizeof(proof);
+    ret = secp256k1_rangeproof_sign(ctx, proof, &len, vmin, &commit, blind, commit.data, 0, 0, val, message, mlen, ext_commit, ext_commit_len, secp256k1_generator_h);
+    if (ret == 0) {
+        mp_raise_ValueError("secp256k1_rangeproof_sign failed");
+    }
+    {
+        uint64_t min_value;
+        uint64_t max_value;
+        ret = secp256k1_rangeproof_verify(ctx, &min_value, &max_value, &commit, proof, len, ext_commit, ext_commit_len, secp256k1_generator_h);
+        if (ret == 0) {
+            mp_raise_ValueError("secp256k1_rangeproof_verify failed");
+        }
+    }
+    {
+        unsigned char blind_out[32];
+        unsigned char message_out[68];
+        uint64_t value_out;
+        uint64_t min_value;
+        uint64_t max_value;
+        size_t message_len = sizeof(message_out);
+        ret = secp256k1_rangeproof_rewind(
+            ctx, blind_out, &value_out, message_out, &message_len, commit.data, &min_value, &max_value,
+            &commit, proof, len, ext_commit, ext_commit_len, secp256k1_generator_h);
+        if (ret == 0) {
+            mp_raise_ValueError("secp256k1_rangeproof_verify failed");
+        }
+    }
+}
+
+// Benchmark secp256k1-zkp API for Confidential Transactions
+STATIC mp_obj_t mod_trezorcrypto_secp256k1_zkp_benchmark() {
     mp_uint_t start_ts = mp_hal_ticks_ms();
-    mp_hal_delay_ms(1234);
+    mp_stack_fill_with_sentinel();
+    mp_uint_t before_stack = mp_max_stack_usage();
+    run_benchmark();
+    mp_uint_t after_stack = mp_max_stack_usage();
     mp_uint_t stop_ts = mp_hal_ticks_ms();
 
-    mp_obj_tuple_t *result = MP_OBJ_TO_PTR(mp_obj_new_tuple(5, NULL));
-    result->items[0] = mp_obj_new_int(mp_stack_limit());
-    result->items[1] = mp_obj_new_int(max_stack_usage_before);
-    result->items[2] = mp_obj_new_int(max_stack_usage_after);
-    result->items[3] = mp_obj_new_int(current_stack_usage);
-    result->items[4] = mp_obj_new_int(stop_ts - start_ts);
+    mp_obj_tuple_t *result = MP_OBJ_TO_PTR(mp_obj_new_tuple(3, NULL));
+    result->items[0] = mp_obj_new_int(before_stack);
+    result->items[1] = mp_obj_new_int(after_stack);
+    result->items[2] = mp_obj_new_int(stop_ts - start_ts);
     return result;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_trezorcrypto_secp256k1_zkp_benchmark_obj, mod_trezorcrypto_secp256k1_zkp_benchmark);
