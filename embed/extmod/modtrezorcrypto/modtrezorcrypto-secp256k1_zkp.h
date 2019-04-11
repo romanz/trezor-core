@@ -23,6 +23,7 @@
 #include "vendor/secp256k1-zkp/include/secp256k1.h"
 #include "vendor/secp256k1-zkp/include/secp256k1_ecdh.h"
 #include "vendor/secp256k1-zkp/include/secp256k1_preallocated.h"
+#include "vendor/secp256k1-zkp/include/secp256k1_rangeproof.h"
 #include "vendor/secp256k1-zkp/include/secp256k1_recovery.h"
 
 // The minimum buffer size can vary in future secp256k1-zkp revisions.
@@ -281,6 +282,32 @@ STATIC mp_obj_t mod_trezorcrypto_secp256k1_zkp_multiply(mp_obj_t secret_key,
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(mod_trezorcrypto_secp256k1_zkp_multiply_obj,
                                  mod_trezorcrypto_secp256k1_zkp_multiply);
 
+/// def pedersen_commit(amount: int, blinding_factor: bytes) -> bytes:
+///     '''
+///     Commit to specified integer amount, using given 32-byte blinding factor.
+///     '''
+STATIC mp_obj_t mod_trezorcrypto_secp256k1_zkp_pedersen_commit(mp_obj_t amount,
+                                                               mp_obj_t blinding_factor) {
+  const secp256k1_context *ctx = mod_trezorcrypto_secp256k1_context();
+  mp_int_t amount_int = mp_obj_get_int(amount);
+
+  mp_buffer_info_t blind;
+  mp_get_buffer_raise(blinding_factor, &blind, MP_BUFFER_READ);
+  if (blind.len != 32) {
+    mp_raise_ValueError("Invalid length of blinding factor");
+  }
+  secp256k1_pedersen_commitment commit;
+  // TODO: H generator should be depend on asset type and be blinded as well.
+  if (!secp256k1_pedersen_commit(ctx, &commit, blind.buf, amount_int, secp256k1_generator_h)) {
+    mp_raise_ValueError("Pedersen commit failed");
+  }
+  // TODO: consider serializing the commitment (-> less memory).
+  return mp_obj_new_bytes((const byte*)&commit, sizeof(commit));
+}
+
+STATIC MP_DEFINE_CONST_FUN_OBJ_2(mod_trezorcrypto_secp256k1_zkp_pedersen_commit_obj,
+                                 mod_trezorcrypto_secp256k1_zkp_pedersen_commit);
+
 STATIC const mp_rom_map_elem_t
     mod_trezorcrypto_secp256k1_zkp_globals_table[] = {
         {MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_secp256k1_zkp)},
@@ -296,6 +323,8 @@ STATIC const mp_rom_map_elem_t
          MP_ROM_PTR(&mod_trezorcrypto_secp256k1_zkp_verify_recover_obj)},
         {MP_ROM_QSTR(MP_QSTR_multiply),
          MP_ROM_PTR(&mod_trezorcrypto_secp256k1_zkp_multiply_obj)},
+        {MP_ROM_QSTR(MP_QSTR_pedersen_commit),
+         MP_ROM_PTR(&mod_trezorcrypto_secp256k1_zkp_pedersen_commit_obj)},
 };
 STATIC MP_DEFINE_CONST_DICT(mod_trezorcrypto_secp256k1_zkp_globals,
                             mod_trezorcrypto_secp256k1_zkp_globals_table);
