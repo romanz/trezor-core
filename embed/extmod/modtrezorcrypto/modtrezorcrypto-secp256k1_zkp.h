@@ -282,31 +282,94 @@ STATIC mp_obj_t mod_trezorcrypto_secp256k1_zkp_multiply(mp_obj_t secret_key,
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(mod_trezorcrypto_secp256k1_zkp_multiply_obj,
                                  mod_trezorcrypto_secp256k1_zkp_multiply);
 
-/// def pedersen_commit(amount: int, blinding_factor: bytes) -> bytes:
+/// def pedersen_commit(value: int, blinding_factor: bytes) -> bytes:
 ///     '''
-///     Commit to specified integer amount, using given 32-byte blinding factor.
+///     Commit to specified integer value, using given 32-byte blinding factor.
 ///     '''
-STATIC mp_obj_t mod_trezorcrypto_secp256k1_zkp_pedersen_commit(mp_obj_t amount,
-                                                               mp_obj_t blinding_factor) {
+STATIC mp_obj_t mod_trezorcrypto_secp256k1_zkp_pedersen_commit(mp_obj_t value_obj,
+                                                               mp_obj_t blind_obj) {
   const secp256k1_context *ctx = mod_trezorcrypto_secp256k1_context();
-  mp_int_t amount_int = mp_obj_get_int(amount);
+  const uint64_t value = mp_obj_get_int(value_obj); // TODO: support value > 32-bits
 
   mp_buffer_info_t blind;
-  mp_get_buffer_raise(blinding_factor, &blind, MP_BUFFER_READ);
+  mp_get_buffer_raise(blind_obj, &blind, MP_BUFFER_READ);
   if (blind.len != 32) {
     mp_raise_ValueError("Invalid length of blinding factor");
   }
   secp256k1_pedersen_commitment commit;
   // TODO: H generator should be depend on asset type and be blinded as well.
-  if (!secp256k1_pedersen_commit(ctx, &commit, blind.buf, amount_int, secp256k1_generator_h)) {
+  if (!secp256k1_pedersen_commit(ctx, &commit, blind.buf, value, secp256k1_generator_h)) {
     mp_raise_ValueError("Pedersen commit failed");
   }
-  // TODO: consider serializing the commitment (-> less memory).
-  return mp_obj_new_bytes((const byte*)&commit, sizeof(commit));
+
+  byte output[33] = {0};
+  secp256k1_pedersen_commitment_serialize(ctx, output, &commit);
+  return mp_obj_new_bytes(output, sizeof(output));
 }
 
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(mod_trezorcrypto_secp256k1_zkp_pedersen_commit_obj,
                                  mod_trezorcrypto_secp256k1_zkp_pedersen_commit);
+
+STATIC uint8_t g_rangeproof_buffer[5134] = {0};
+
+/// def rangeproof_sign(value: int, commit: bytes, blind: bytes, nonce: bytes, message: bytes, extra_commit: bytes) -> bytes:
+///     '''
+///     Build a range proof for specified value.
+///     '''
+STATIC mp_obj_t mod_trezorcrypto_secp256k1_zkp_rangeproof_sign(size_t n_args, const mp_obj_t *args) {
+  mp_obj_t value_obj = args[0];
+  mp_obj_t commit_obj = args[1];
+  mp_obj_t blind_obj = args[2];
+  mp_obj_t nonce_obj = args[3];
+  mp_obj_t message_obj = args[4];
+  mp_obj_t extra_commit_obj = args[5];
+
+  const secp256k1_context *ctx = mod_trezorcrypto_secp256k1_context();
+  const uint64_t VALUE_MIN = 1;  // TODO: allow setting to 0?
+  const int EXPONENT = 0;
+  const int BITS = 32;
+  const uint64_t value = mp_obj_get_int(value_obj);
+
+  mp_buffer_info_t commit;
+  mp_get_buffer_raise(commit_obj, &commit, MP_BUFFER_READ);
+  if (commit.len != 33) {
+    mp_raise_ValueError("Invalid length of commitment");
+  }
+  secp256k1_pedersen_commitment commitment;
+  if (secp256k1_pedersen_commitment_parse(ctx, &commitment, commit.buf) != 1) {
+    mp_raise_ValueError("Invalid Pedersen commitment");
+  }
+
+  mp_buffer_info_t blind;
+  mp_get_buffer_raise(blind_obj, &blind, MP_BUFFER_READ);
+  if (blind.len != 32) {
+    mp_raise_ValueError("Invalid length of blinding factor");
+  }
+
+  mp_buffer_info_t nonce;
+  mp_get_buffer_raise(nonce_obj, &nonce, MP_BUFFER_READ);
+  if (nonce.len != 32) {
+    mp_raise_ValueError("Invalid length of nonce");
+  }
+
+  mp_buffer_info_t message;
+  mp_get_buffer_raise(message_obj, &message, MP_BUFFER_READ);
+
+  mp_buffer_info_t extra_commit;
+  mp_get_buffer_raise(extra_commit_obj, &extra_commit, MP_BUFFER_READ);
+
+  size_t rangeproof_len = sizeof(g_rangeproof_buffer);
+  if (!secp256k1_rangeproof_sign(
+    ctx, g_rangeproof_buffer, &rangeproof_len, VALUE_MIN, &commitment, blind.buf, nonce.buf, EXPONENT, BITS,
+    value, message.buf, message.len, extra_commit.buf, extra_commit.len, secp256k1_generator_h)) {
+    mp_raise_ValueError("Rangeproof sign failed");
+  }
+  return mp_obj_new_bytes(g_rangeproof_buffer, rangeproof_len);
+}
+
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(
+    mod_trezorcrypto_secp256k1_zkp_rangeproof_sign_obj, 6, 6,
+    mod_trezorcrypto_secp256k1_zkp_rangeproof_sign);
 
 STATIC const mp_rom_map_elem_t
     mod_trezorcrypto_secp256k1_zkp_globals_table[] = {
@@ -325,6 +388,8 @@ STATIC const mp_rom_map_elem_t
          MP_ROM_PTR(&mod_trezorcrypto_secp256k1_zkp_multiply_obj)},
         {MP_ROM_QSTR(MP_QSTR_pedersen_commit),
          MP_ROM_PTR(&mod_trezorcrypto_secp256k1_zkp_pedersen_commit_obj)},
+        {MP_ROM_QSTR(MP_QSTR_rangeproof_sign),
+         MP_ROM_PTR(&mod_trezorcrypto_secp256k1_zkp_rangeproof_sign_obj)},
 };
 STATIC MP_DEFINE_CONST_DICT(mod_trezorcrypto_secp256k1_zkp_globals,
                             mod_trezorcrypto_secp256k1_zkp_globals_table);
